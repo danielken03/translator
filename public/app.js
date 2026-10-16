@@ -81,7 +81,9 @@ function renderSetup() {
   const line = (ok, okText, badText) => `<p class="${ok ? "ok" : "error"}">${ok ? "✓ " + okText : "✕ " + badText}</p>`;
   els.setupStatus.innerHTML =
     line(setup.translation, "Translation connected", "Translation key missing (ANTHROPIC_API_KEY)") +
-    line(setup.voice, "Your voice connected", "Voice not set up (ELEVENLABS_API_KEY / ELEVENLABS_VOICE_ID)") +
+    (setup.voice
+      ? `<p class="ok">✓ Your ElevenLabs voice connected</p>`
+      : `<p class="muted">○ ElevenLabs voice not added yet (ELEVENLABS_API_KEY / ELEVENLABS_VOICE_ID) — using the phone's Spanish voice</p>`) +
     (setup.passcodeSet ? "" : `<p class="error">✕ No passcode set (APP_PASSCODE) — anyone with the link can use your credits</p>`);
 }
 
@@ -256,6 +258,7 @@ function setTranslateStatus(msg, isError = false) {
 
 function renderTranslation() {
   els.stepPlay.hidden = false;
+  document.getElementById("voiceNote").hidden = !usePhoneVoice();
   if (current.unclear_parts.length) {
     els.unclear.innerHTML = "<strong>Double-check these parts</strong> — they may have been misheard:<br>" +
       current.unclear_parts.map((u) => "• " + escapeHtml(u)).join("<br>");
@@ -341,7 +344,29 @@ async function prepareAudio({ cacheOnly = false } = {}) {
   }
 }
 
+// Until your ElevenLabs voice is set up, use the phone's own Spanish voice (free).
+function usePhoneVoice() {
+  return Boolean(setup && !setup.voice && "speechSynthesis" in window);
+}
+
+function spanishPhoneVoice() {
+  const voices = window.speechSynthesis.getVoices() || [];
+  const pref = ["es-US", "es-MX", "es-419", "es-CO"];
+  for (const p of pref) {
+    const v = voices.find((x) => x.lang && x.lang.replace("_", "-").toLowerCase().startsWith(p.toLowerCase()));
+    if (v) return v;
+  }
+  return voices.find((x) => x.lang && x.lang.toLowerCase().startsWith("es")) || null;
+}
+
 async function loadClip(i, paras, spd, run, cacheOnly = false) {
+  if (usePhoneVoice()) {
+    clips[i] = { status: "ready", phone: true };
+    setClipState(i);
+    updatePlayUi();
+    if (waitingFor === i) playIndex(i);
+    return;
+  }
   const text = paras[i].spanish;
   const key = await clipKey(text, spd);
   clips[i] = { status: "loading" };
@@ -388,7 +413,7 @@ function setClipState(i) {
     waiting: "Waiting…",
     missing: "No audio saved yet",
     loading: "Making audio…",
-    ready: "Ready ✓",
+    ready: c.phone ? "Ready ✓ (phone voice)" : "Ready ✓",
     error: `Audio failed: ${c.error || "error"} — tap to retry`,
   }[c.status] || "";
 }
@@ -436,10 +461,43 @@ function playIndex(i) {
   }
   waitingFor = -1;
   playingIndex = i;
+  if (c.phone) { speakWithPhone(i); updatePlayUi(); return; }
   els.player.src = c.url;
   const p = els.player.play();
   if (p) p.catch(() => { playing = false; updatePlayUi(); });
   updatePlayUi();
+}
+
+let phoneToken = 0;
+function stopPhoneVoice() {
+  phoneToken++;
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
+}
+function speakWithPhone(i) {
+  const synth = window.speechSynthesis;
+  stopPhoneVoice();
+  const token = phoneToken;
+  const u = new SpeechSynthesisUtterance(current.paragraphs[i].spanish);
+  const v = spanishPhoneVoice();
+  if (v) u.voice = v;
+  u.lang = v ? v.lang : "es-US";
+  u.rate = current.speed || 0.95;
+  u.onend = () => {
+    if (token !== phoneToken || !playing || playingIndex !== i) return;
+    els.progressBar.style.width = `${((i + 1) / clips.length) * 100}%`;
+    playIndex(i + 1);
+  };
+  u.onerror = (e) => {
+    if (token !== phoneToken || e.error === "interrupted" || e.error === "canceled") return;
+    playing = false;
+    updatePlayUi();
+  };
+  synth.speak(u);
+}
+if ("speechSynthesis" in window) {
+  // Some phones load their voice list a moment after the page opens.
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.addEventListener?.("voiceschanged", () => window.speechSynthesis.getVoices());
 }
 
 els.player.addEventListener("ended", () => {
@@ -461,16 +519,19 @@ function stopPlayback() {
   playing = false;
   waitingFor = -1;
   try { els.player.pause(); } catch {}
+  stopPhoneVoice();
   updatePlayUi();
 }
 
 els.playBtn.addEventListener("click", () => {
   unlockAudio();
   if (playing) {
-    playing = false;
-    waitingFor = -1;
-    els.player.pause();
-    updatePlayUi();
+    stopPlayback();
+    return;
+  }
+  // Phone voice can't pause mid-sentence reliably: resume from the paragraph it was on.
+  if (clips[0] && clips[0].phone) {
+    playFrom(playingIndex >= 0 ? playingIndex : 0);
     return;
   }
   // A restored preshift with no saved audio: make it now, then play.
@@ -492,6 +553,7 @@ els.playBtn.addEventListener("click", () => {
 els.restartBtn.addEventListener("click", () => {
   unlockAudio();
   try { els.player.pause(); } catch {}
+  stopPhoneVoice();
   playingIndex = -1;
   playFrom(0);
 });

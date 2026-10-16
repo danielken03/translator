@@ -10,6 +10,8 @@ Speak your housekeeping preshift in English. The app translates the meaning into
 2. **Translate**: Claude translates the meaning, not word for word, split into short paragraphs. Each paragraph has a "What this says in English" check, and anything that sounded misheard gets flagged.
 3. **Play**: ElevenLabs speaks each paragraph in your cloned voice. The audio is saved on your phone, so replays cost nothing.
 
+Until your ElevenLabs voice is added, the app plays the Spanish with your phone's built-in Spanish voice (free), so you can start using it right away.
+
 Works in Chrome on Android and Safari on iPhone. You can add it to your home screen like an app.
 
 ## Setup
