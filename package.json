@@ -1,5 +1,5 @@
 {
-  "name": "preshift-translator",
+  "name": "translator",
   "version": "1.0.0",
   "private": true,
   "description": "Speak preshift in English, play it back in Spanish in your own cloned voice.",
