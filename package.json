@@ -1,0 +1,13 @@
+{
+  "name": "preshift-translator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Speak preshift in English, play it back in Spanish in your own cloned voice.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
