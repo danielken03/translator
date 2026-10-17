@@ -1,8 +1,10 @@
-// Preshift Translator — runs in the phone's browser.
+// Voice Translator — runs in the phone's browser.
 // 1) Speech-to-text with the browser's built-in recognizer (free)
-// 2) /api/translate  → Claude translates the meaning into Spanish
+// 2) /api/translate  → Claude translates the meaning into the chosen language
 // 3) /api/speak      → ElevenLabs speaks each paragraph in your cloned voice
 // Audio is cached on the phone, so replays don't use credits.
+
+import { LANGUAGES, DEFAULT_LANGUAGE, getLanguage } from "/languages.js";
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -93,7 +95,7 @@ function renderSetup() {
       ? `<p class="ok">✓ Your ElevenLabs voice is saved on this phone</p>`
       : setup.voice
         ? `<p class="ok">✓ ElevenLabs voice set up in Vercel</p>`
-        : `<p class="muted">○ ElevenLabs voice not added yet — using the phone's Spanish voice</p>`) +
+        : `<p class="muted">○ ElevenLabs voice not added yet — using the phone's built-in voice</p>`) +
     (setup.passcodeSet ? "" : `<p class="error">✕ No passcode set (APP_PASSCODE) — anyone with the link can use your credits</p>`);
 }
 
@@ -234,20 +236,21 @@ els.clearBtn.addEventListener("click", () => {
 });
 
 /* ---------- translation ---------- */
-let current = null; // { english, paragraphs:[{spanish, back_translation}], unclear_parts, speed }
+let current = null; // { english, language, paragraphs:[{text, back_translation}], unclear_parts, speed }
 
 els.translateBtn.addEventListener("click", async () => {
   stopRecording();
   unlockAudio();
   const english = els.english.value.trim();
   if (!english) return;
-  if (current && current.english === english && !confirm("Translate the same text again? This uses a little more credit.")) return;
+  if (current && current.english === english && current.language === selectedLanguage() && !confirm("Translate the same text again? This uses a little more credit.")) return;
 
-  setTranslateStatus("Translating… (about 10–20 seconds)");
+  setTranslateStatus(`Translating to ${getLanguage(selectedLanguage()).name}… (about 10–20 seconds)`);
   els.translateBtn.disabled = true;
   try {
-    const result = await api("/api/translate", { english });
-    current = { english, paragraphs: result.paragraphs, unclear_parts: result.unclear_parts || [], speed: speed() };
+    const language = selectedLanguage();
+    const result = await api("/api/translate", { english, language });
+    current = { english, language: result.language || language, paragraphs: result.paragraphs, unclear_parts: result.unclear_parts || [], speed: speed() };
     saveLast();
     setTranslateStatus("");
     renderTranslation();
@@ -268,6 +271,7 @@ function setTranslateStatus(msg, isError = false) {
 
 function renderTranslation() {
   els.stepPlay.hidden = false;
+  showLanguageLabels(curLang());
   document.getElementById("voiceNote").hidden = !usePhoneVoice();
   if (current.unclear_parts.length) {
     els.unclear.innerHTML = "<strong>Double-check these parts</strong> — they may have been misheard:<br>" +
@@ -281,7 +285,7 @@ function renderTranslation() {
     const li = document.createElement("li");
     li.dataset.index = i;
     li.innerHTML = `
-      <p class="es" lang="es">${escapeHtml(p.spanish)}</p>
+      <p class="tr" lang="${curLang().code}" dir="${curLang().dir}">${escapeHtml(p.text)}</p>
       <div class="state" id="state-${i}">Waiting…</div>
       <details><summary>What this says in English</summary><p class="en">${escapeHtml(p.back_translation)}</p></details>`;
     li.addEventListener("click", (ev) => {
@@ -332,7 +336,7 @@ async function idbClear() {
 
 async function clipKey(text, spd) {
   // Include the voice, so switching voices makes new audio instead of reusing the old.
-  const data = new TextEncoder().encode(`${phoneVoiceId() || "server"}|${spd}|${text}`);
+  const data = new TextEncoder().encode(`${phoneVoiceId() || "server"}|${curLang().code}|${spd}|${text}`);
   const hash = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hash)).slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -355,19 +359,20 @@ async function prepareAudio({ cacheOnly = false } = {}) {
   }
 }
 
-// Until your ElevenLabs voice is set up, use the phone's own Spanish voice (free).
+// Until your ElevenLabs voice is set up, use the phone's own voice (free).
 function usePhoneVoice() {
   return Boolean(setup && !setup.voice && !hasPhoneEleven() && "speechSynthesis" in window);
 }
 
-function spanishPhoneVoice() {
+function phoneVoiceFor(lang) {
   const voices = window.speechSynthesis.getVoices() || [];
-  const pref = ["es-US", "es-MX", "es-419", "es-CO"];
+  const base = lang.code;
+  const pref = lang.code === "es" ? ["es-US", "es-MX", "es-419", "es-CO"] : [lang.speechTag];
   for (const p of pref) {
     const v = voices.find((x) => x.lang && x.lang.replace("_", "-").toLowerCase().startsWith(p.toLowerCase()));
     if (v) return v;
   }
-  return voices.find((x) => x.lang && x.lang.toLowerCase().startsWith("es")) || null;
+  return voices.find((x) => x.lang && x.lang.toLowerCase().startsWith(base)) || null;
 }
 
 async function loadClip(i, paras, spd, run, cacheOnly = false) {
@@ -378,7 +383,7 @@ async function loadClip(i, paras, spd, run, cacheOnly = false) {
     if (waitingFor === i) playIndex(i);
     return;
   }
-  const text = paras[i].spanish;
+  const text = paras[i].text;
   const key = await clipKey(text, spd);
   clips[i] = { status: "loading" };
   setClipState(i);
@@ -396,8 +401,8 @@ async function loadClip(i, paras, spd, run, cacheOnly = false) {
         blob = await api("/api/speak", {
           text,
           speed: spd,
-          previous_text: paras[i - 1]?.spanish || "",
-          next_text: paras[i + 1]?.spanish || "",
+          previous_text: paras[i - 1]?.text || "",
+          next_text: paras[i + 1]?.text || "",
         }, { asBlob: true });
         idbPut(key, blob);
       }
@@ -488,10 +493,11 @@ function speakWithPhone(i) {
   const synth = window.speechSynthesis;
   stopPhoneVoice();
   const token = phoneToken;
-  const u = new SpeechSynthesisUtterance(current.paragraphs[i].spanish);
-  const v = spanishPhoneVoice();
+  const lang = curLang();
+  const u = new SpeechSynthesisUtterance(current.paragraphs[i].text);
+  const v = phoneVoiceFor(lang);
   if (v) u.voice = v;
-  u.lang = v ? v.lang : "es-US";
+  u.lang = v ? v.lang : lang.speechTag;
   u.rate = current.speed || 0.95;
   u.onend = () => {
     if (token !== phoneToken || !playing || playingIndex !== i) return;
@@ -596,7 +602,7 @@ function updatePlayUi() {
   else if (missing) els.playLabel.textContent = "Make audio & play";
   else if (!total) els.playLabel.textContent = "Preparing voice…";
   else if (!firstReady) els.playLabel.textContent = clips[0].status === "error" ? "Audio failed — tap a paragraph to retry" : "Preparing voice…";
-  else els.playLabel.textContent = playingIndex >= 0 ? "Resume" : "Play in Spanish";
+  else els.playLabel.textContent = playingIndex >= 0 ? "Resume" : `Play in ${curLang().name}`;
 
   if (!total) els.audioStatus.textContent = "";
   else if (ready === total) els.audioStatus.textContent = "All audio ready";
@@ -611,12 +617,45 @@ function restoreLast() {
   let last = null;
   try { last = JSON.parse(store.get("last", "null")); } catch {}
   if (!last || !Array.isArray(last.paragraphs) || !last.paragraphs.length) return;
+  // Older saves (Spanish-only version) used "spanish" instead of "text".
+  last.paragraphs = last.paragraphs.map((p) => ({ text: p.text || p.spanish || "", back_translation: p.back_translation || "" }));
+  last.language = LANGUAGES[last.language] ? last.language : DEFAULT_LANGUAGE;
   current = last;
   if (!els.english.value.trim()) els.english.value = last.english || "";
   updateCount();
   renderTranslation();
   prepareAudio({ cacheOnly: true }); // never spends credits just from opening the app
 }
+
+/* ---------- language ---------- */
+const langSelect = $("language");
+for (const [code, l] of Object.entries(LANGUAGES)) {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = l.name === l.native ? l.name : `${l.name} — ${l.native}`;
+  langSelect.appendChild(opt);
+}
+function selectedLanguage() {
+  const v = store.get("language", DEFAULT_LANGUAGE);
+  return LANGUAGES[v] ? v : DEFAULT_LANGUAGE;
+}
+// The language of what's on screen now (the last translation), else the menu choice.
+function curLang() { return getLanguage((current && current.language) || selectedLanguage()); }
+
+function showLanguageLabels(lang) {
+  document.querySelectorAll("#stepPlay .langName").forEach((el) => (el.textContent = lang.name));
+}
+function updateTranslateLabel() {
+  const lang = getLanguage(selectedLanguage());
+  els.translateBtn.querySelector(".langName").textContent = lang.name;
+  $("targetNative").textContent = lang.native;
+}
+langSelect.value = selectedLanguage();
+updateTranslateLabel();
+langSelect.addEventListener("change", () => {
+  store.set("language", langSelect.value);
+  updateTranslateLabel();
+});
 
 /* ---------- settings ---------- */
 function speed() { return Number(store.get("speed", "0.95")) || 0.95; }
@@ -691,12 +730,13 @@ $("testVoiceBtn").addEventListener("click", async () => {
   voiceMsg("Making a short test clip…");
   try {
     stopPlayback();
-    const blob = await api("/api/speak", { text: "Hola equipo. Esta es una prueba de mi voz.", speed: speed() }, { asBlob: true });
+    const testLang = getLanguage(selectedLanguage());
+    const blob = await api("/api/speak", { text: testLang.test, speed: speed() }, { asBlob: true });
     if (testUrl) URL.revokeObjectURL(testUrl);
     testUrl = URL.createObjectURL(blob);
     els.player.src = testUrl;
     await els.player.play();
-    voiceMsg("✓ It works. You should hear your voice in Spanish.");
+    voiceMsg(`✓ It works. You should hear your voice in ${testLang.name}.`);
   } catch (e) {
     voiceMsg(e.message, true);
   } finally {
@@ -704,7 +744,7 @@ $("testVoiceBtn").addEventListener("click", async () => {
   }
 });
 els.forgetBtn.addEventListener("click", async () => {
-  if (!confirm("Clear the saved preshift and its audio from this phone?")) return;
+  if (!confirm("Clear the saved translation and its audio from this phone?")) return;
   stopPlayback();
   store.del("last");
   await idbClear();

@@ -18,7 +18,7 @@ function mockRes() {
 }
 
 test("system prompt asks for neutral Latin American Spanish and includes glossary", () => {
-  const p = buildSystemPrompt();
+  const p = buildSystemPrompt("es");
   assert.match(p, /ustedes/);
   assert.match(p, /Latin American/);
   assert.match(p, /stayover/);
@@ -30,7 +30,7 @@ test("translateWithClaude parses the tool result", async () => {
     sent = { url, opts };
     return new Response(JSON.stringify({
       content: [{ type: "tool_use", name: "deliver_translation", input: {
-        paragraphs: [{ spanish: " Hola equipo. ", back_translation: "Hi team." }, { spanish: "", back_translation: "" }],
+        paragraphs: [{ text: " Hola equipo. ", back_translation: "Hi team." }, { text: "", back_translation: "" }],
         unclear_parts: ["room 41?"],
       } }],
       usage: { input_tokens: 10, output_tokens: 20 },
@@ -39,9 +39,10 @@ test("translateWithClaude parses the tool result", async () => {
   const out = await translateWithClaude({ english: "Hi team", apiKey: "k", model: "m", fetchImpl: fakeFetch });
   assert.equal(sent.url, "https://api.anthropic.com/v1/messages");
   const body = JSON.parse(sent.opts.body);
-  assert.equal(body.tool_choice.name, "deliver_translation");
+  assert.equal(body.tool_choice.type, "auto");
+  assert.equal(body.tools[0].name, "deliver_translation");
   assert.equal(sent.opts.headers["x-api-key"], "k");
-  assert.deepEqual(out.paragraphs, [{ spanish: "Hola equipo.", back_translation: "Hi team." }]);
+  assert.deepEqual(out.paragraphs, [{ text: "Hola equipo.", back_translation: "Hi team." }]);
   assert.deepEqual(out.unclear_parts, ["room 41?"]);
 });
 
@@ -101,4 +102,10 @@ test("phone-provided ElevenLabs key and voice override Vercel settings", async (
   const fallback = getConfig({ headers: { "x-eleven-voice": "bad voice id!" } });
   assert.equal(fallback.elevenKey, "server-key");
   assert.equal(fallback.elevenVoiceId, "serverVoice123");
+});
+
+test("falls back to JSON in a text reply", async () => {
+  const { extractResult } = await import("../lib/translate.js");
+  const out = extractResult({ content: [{ type: "text", text: 'Here you go: {"paragraphs":[{"text":"Hola","back_translation":"Hi"}],"unclear_parts":[]}' }] });
+  assert.equal(out.paragraphs[0].text, "Hola");
 });

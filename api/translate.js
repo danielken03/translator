@@ -1,5 +1,6 @@
 import { getConfig, checkPasscode, readJson, sendJson } from "../lib/config.js";
 import { translateWithClaude, MAX_INPUT_CHARS } from "../lib/translate.js";
+import { LANGUAGES, DEFAULT_LANGUAGE } from "../public/languages.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Use POST." });
@@ -21,13 +22,17 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: `That's too long (${english.length} characters). Keep it under ${MAX_INPUT_CHARS}.` });
   }
 
+  const language = String(body.language || DEFAULT_LANGUAGE);
+  if (!LANGUAGES[language]) return sendJson(res, 400, { error: "That language isn't supported yet." });
+
   try {
     const result = await translateWithClaude({
       english,
+      language,
       apiKey: config.anthropicKey,
       model: config.anthropicModel,
     });
-    return sendJson(res, 200, result);
+    return sendJson(res, 200, { ...result, language });
   } catch (err) {
     console.error("translate error:", err);
     return sendJson(res, err.status && err.status < 500 ? 502 : 500, { error: err.message || "Translation failed." });

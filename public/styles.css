@@ -174,7 +174,7 @@ textarea[readonly] { opacity: .85; }
   transition: border-color .2s, background .2s;
 }
 .paragraphs li.current { border-color: var(--accent); background: var(--accent-soft); }
-.paragraphs .es { margin: 0; font-size: 18px; line-height: 1.45; }
+.paragraphs .tr { margin: 0; font-size: 18px; line-height: 1.45; }
 .paragraphs .state { font-size: 13px; color: var(--muted); margin-top: 6px; }
 .paragraphs .state.err { color: var(--err); }
 .paragraphs details { margin-top: 8px; }
@@ -195,6 +195,7 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .sheet { padding: 20px; display: grid; gap: 8px; }
 .sheet-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.lang-select { margin-bottom: 12px; }
 .group {
   border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 14px 14px; margin: 12px 0 4px; min-width: 0;

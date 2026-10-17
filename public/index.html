@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#14322f" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Preshift Translator</title>
+  <title>Voice Translator</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icon.svg" />
@@ -19,8 +19,8 @@
         <svg viewBox="0 0 32 32"><path d="M6 8h13a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-6l-5 4v-4H6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z" fill="currentColor" opacity=".55"/><path d="M14 13h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-1v4l-5-4h-6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z" fill="currentColor"/></svg>
       </span>
       <div>
-        <h1>Preshift</h1>
-        <p class="sub">English <span aria-hidden="true">→</span> Español</p>
+        <h1>Voice Translator</h1>
+        <p class="sub">English <span aria-hidden="true">→</span> <span id="targetNative">Español</span></p>
       </div>
     </div>
     <button id="settingsBtn" class="icon-btn" aria-label="Settings">
@@ -73,7 +73,9 @@
         <span class="num">2</span>
         <h2>Translate</h2>
       </div>
-      <button id="translateBtn" class="btn primary wide" type="button" disabled>Translate to Spanish</button>
+      <label class="field-label" for="language">Translate into</label>
+      <select id="language" class="lang-select"></select>
+      <button id="translateBtn" class="btn primary wide" type="button" disabled><span>Translate to <span class="langName">Spanish</span></span></button>
       <p id="translateStatus" class="status" hidden></p>
     </section>
 
@@ -81,10 +83,10 @@
     <section class="card step" id="stepPlay" hidden>
       <div class="step-head">
         <span class="num">3</span>
-        <h2>Play in Spanish</h2>
+        <h2>Play in <span class="langName">Spanish</span></h2>
       </div>
 
-      <p id="voiceNote" class="note" hidden>Using your phone's built-in Spanish voice for now. Once your ElevenLabs voice is added, it will speak in your voice.</p>
+      <p id="voiceNote" class="note" hidden>Using your phone's built-in voice for now. Once your ElevenLabs voice is added, it will speak in your voice.</p>
       <div id="unclear" class="note warn" hidden></div>
 
       <div class="player">
@@ -110,7 +112,7 @@
     <form method="dialog" class="sheet">
       <h2>Settings</h2>
 
-      <label class="field-label" for="speed">Spanish speaking speed</label>
+      <label class="field-label" for="speed">Speaking speed</label>
       <select id="speed">
         <option value="0.85">Slower</option>
         <option value="0.95">A little slower (recommended)</option>
@@ -145,7 +147,7 @@
       <div id="setupStatus" class="setup"></div>
 
       <div class="sheet-actions">
-        <button id="forgetBtn" class="btn ghost small" type="button">Clear saved preshift</button>
+        <button id="forgetBtn" class="btn ghost small" type="button">Clear saved translation</button>
         <button id="lockBtn" class="btn ghost small" type="button">Lock (sign out)</button>
       </div>
       <button class="btn primary wide" value="close">Done</button>

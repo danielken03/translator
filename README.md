@@ -1,6 +1,6 @@
-# Preshift Translator
+# Voice Translator
 
-Speak your housekeeping preshift in English. The app translates the meaning into clear, neutral Latin American Spanish and plays it through your Bluetooth speaker in your own cloned voice.
+Speak in English (like a housekeeping preshift). The app translates the meaning into the language you pick (Spanish, French, Portuguese, Chinese, Arabic, Hindi, Filipino, Korean, Russian, Ukrainian or Turkish) and plays it through your Bluetooth speaker in your own cloned voice.
 
 **Live at:** https://translate.kenndoesdev.com
 
@@ -53,9 +53,13 @@ Optional: `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`), `ELEVENLABS_MODEL` (d
    - Add a CNAME with host `translate` and the value Vercel shows.
 4. Wait a few minutes until Vercel shows the domain as Valid.
 
+## Adding a language
+
+Edit `public/languages.js`. Copy an entry and change the name, voice tag and the short `guidance` line (which dialect, formal or informal "you", etc.). Stick to languages ElevenLabs' multilingual model supports so your cloned voice can speak them.
+
 ## Editing the translation
 
-- **Housekeeping words**: edit `lib/glossary.js`. Add your team's terms and how they should be said in Spanish.
+- **Housekeeping words**: edit `lib/glossary.js`. Each term has a meaning (used for every language) and optional exact wording per language.
 - **Tone and style rules**: edit `buildSystemPrompt()` in `lib/translate.js`.
 
 ## Using it at preshift
