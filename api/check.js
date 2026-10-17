@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   return sendJson(res, 200, {
     ok: true,
     translation: Boolean(config.anthropicKey),
-    voice: Boolean(config.elevenKey && config.elevenVoiceId),
+    voice: config.serverVoice, // ElevenLabs set up in Vercel (phone Settings can override)
     passcodeSet: Boolean(config.passcode),
   });
 }

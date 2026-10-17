@@ -22,6 +22,8 @@ Works in Chrome on Android and Safari on iPhone. You can add it to your home scr
 - **API Keys** → Create key → copy it.
 
 ### 2. ElevenLabs (your voice)
+You can add your voice right in the app: tap ⚙ → **Your ElevenLabs voice**, paste the Voice ID and API key, tap **Save**, then **Test my voice**. They're saved only on that phone. (Or put them in Vercel as below so every phone uses them.)
+
 - Subscribe to **Starter** (Instant Voice Clone) or **Creator** (Professional Voice Clone, sounds more like you, more credits).
 - **Voices → Add voice → Instant Voice Clone**: upload 1–3 minutes of clean recordings of you talking (quiet room, no music).
 - Open your new voice → copy the **Voice ID**.

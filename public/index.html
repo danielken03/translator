@@ -119,6 +119,29 @@
       </select>
       <p class="muted small">Changing speed makes new audio next time you translate.</p>
 
+      <fieldset class="group">
+        <legend>Your ElevenLabs voice</legend>
+        <p class="muted small">Saved only on this phone. Both come from the same ElevenLabs account, and that account is charged.</p>
+
+        <label class="field-label" for="voiceId">Voice ID</label>
+        <input id="voiceId" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 21m00Tcm4TlvDq8ikWAM" />
+        <p class="muted small">ElevenLabs → Voices → your voice → copy the ID.</p>
+
+        <label class="field-label" for="elevenKey">API key</label>
+        <div class="key-row">
+          <input id="elevenKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk_…" />
+          <button id="showKeyBtn" class="btn ghost small" type="button">Show</button>
+        </div>
+        <p class="muted small">ElevenLabs → Developers → API Keys → Create key.</p>
+
+        <div class="sheet-actions">
+          <button id="saveVoiceBtn" class="btn primary small" type="button">Save</button>
+          <button id="testVoiceBtn" class="btn ghost small" type="button">▶ Test my voice</button>
+          <button id="removeVoiceBtn" class="btn ghost small" type="button">Remove</button>
+        </div>
+        <p id="voiceMsg" class="small" hidden></p>
+      </fieldset>
+
       <div id="setupStatus" class="setup"></div>
 
       <div class="sheet-actions">

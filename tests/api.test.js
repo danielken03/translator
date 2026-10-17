@@ -78,7 +78,7 @@ test("speak route reports missing voice setup", async () => {
   const res = mockRes();
   await speak(mockReq({ headers: { "x-app-passcode": "secret" }, body: { text: "hola" } }), res);
   assert.equal(res.statusCode, 500);
-  assert.match(res.json().error, /VOICE_ID/);
+  assert.match(res.json().error, /Voice ID/);
 });
 
 test("check route reports what's configured", async () => {
@@ -89,4 +89,16 @@ test("check route reports what's configured", async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(res.json().translation, true);
   assert.equal(res.json().voice, false);
+});
+
+test("phone-provided ElevenLabs key and voice override Vercel settings", async () => {
+  process.env.ELEVENLABS_API_KEY = "server-key";
+  process.env.ELEVENLABS_VOICE_ID = "serverVoice123";
+  const { getConfig } = await import("../lib/config.js");
+  const fromPhone = getConfig({ headers: { "x-eleven-key": "sk_phonekey123", "x-eleven-voice": "PhoneVoice12345" } });
+  assert.equal(fromPhone.elevenKey, "sk_phonekey123");
+  assert.equal(fromPhone.elevenVoiceId, "PhoneVoice12345");
+  const fallback = getConfig({ headers: { "x-eleven-voice": "bad voice id!" } });
+  assert.equal(fallback.elevenKey, "server-key");
+  assert.equal(fallback.elevenVoiceId, "serverVoice123");
 });

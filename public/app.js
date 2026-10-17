@@ -30,11 +30,19 @@ const store = {
 
 /* ---------- API ---------- */
 function passcode() { return store.get("passcode", ""); }
+function phoneVoiceId() { return store.get("elevenVoice", ""); }
+function phoneElevenKey() { return store.get("elevenKey", ""); }
+function hasPhoneEleven() { return Boolean(phoneVoiceId() && phoneElevenKey()); }
 
 async function api(path, body, { asBlob = false } = {}) {
+  const headers = { "content-type": "application/json", "x-app-passcode": passcode() };
+  if (hasPhoneEleven()) {
+    headers["x-eleven-key"] = phoneElevenKey();
+    headers["x-eleven-voice"] = phoneVoiceId();
+  }
   const resp = await fetch(path, {
     method: body ? "POST" : "GET",
-    headers: { "content-type": "application/json", "x-app-passcode": passcode() },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   if (resp.status === 401) { lock(); throw new Error("Passcode needed."); }
@@ -81,9 +89,11 @@ function renderSetup() {
   const line = (ok, okText, badText) => `<p class="${ok ? "ok" : "error"}">${ok ? "✓ " + okText : "✕ " + badText}</p>`;
   els.setupStatus.innerHTML =
     line(setup.translation, "Translation connected", "Translation key missing (ANTHROPIC_API_KEY)") +
-    (setup.voice
-      ? `<p class="ok">✓ Your ElevenLabs voice connected</p>`
-      : `<p class="muted">○ ElevenLabs voice not added yet (ELEVENLABS_API_KEY / ELEVENLABS_VOICE_ID) — using the phone's Spanish voice</p>`) +
+    (hasPhoneEleven()
+      ? `<p class="ok">✓ Your ElevenLabs voice is saved on this phone</p>`
+      : setup.voice
+        ? `<p class="ok">✓ ElevenLabs voice set up in Vercel</p>`
+        : `<p class="muted">○ ElevenLabs voice not added yet — using the phone's Spanish voice</p>`) +
     (setup.passcodeSet ? "" : `<p class="error">✕ No passcode set (APP_PASSCODE) — anyone with the link can use your credits</p>`);
 }
 
@@ -321,7 +331,8 @@ async function idbClear() {
 }
 
 async function clipKey(text, spd) {
-  const data = new TextEncoder().encode(`${spd}|${text}`);
+  // Include the voice, so switching voices makes new audio instead of reusing the old.
+  const data = new TextEncoder().encode(`${phoneVoiceId() || "server"}|${spd}|${text}`);
   const hash = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hash)).slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -346,7 +357,7 @@ async function prepareAudio({ cacheOnly = false } = {}) {
 
 // Until your ElevenLabs voice is set up, use the phone's own Spanish voice (free).
 function usePhoneVoice() {
-  return Boolean(setup && !setup.voice && "speechSynthesis" in window);
+  return Boolean(setup && !setup.voice && !hasPhoneEleven() && "speechSynthesis" in window);
 }
 
 function spanishPhoneVoice() {
@@ -611,7 +622,87 @@ function restoreLast() {
 function speed() { return Number(store.get("speed", "0.95")) || 0.95; }
 els.speed.value = String(speed());
 els.speed.addEventListener("change", () => store.set("speed", els.speed.value));
-els.settingsBtn.addEventListener("click", () => { renderSetup(); els.settings.showModal(); });
+els.settingsBtn.addEventListener("click", () => {
+  $("voiceId").value = phoneVoiceId();
+  $("elevenKey").value = phoneElevenKey();
+  $("elevenKey").type = "password";
+  $("showKeyBtn").textContent = "Show";
+  $("voiceMsg").hidden = true;
+  renderSetup();
+  els.settings.showModal();
+});
+
+/* ---------- ElevenLabs voice settings ---------- */
+function voiceMsg(text, isError = false) {
+  const el = $("voiceMsg");
+  el.textContent = text;
+  el.hidden = !text;
+  el.classList.toggle("error", isError);
+  el.classList.toggle("ok", !isError && Boolean(text));
+}
+
+// After the voice changes, show the current preshift as needing new audio
+// (made when you tap Play, not automatically, so no surprise credit use).
+function voiceChanged() {
+  renderSetup();
+  if (current) {
+    stopPlayback();
+    renderTranslation();
+    prepareAudio({ cacheOnly: true });
+  }
+}
+
+$("showKeyBtn").addEventListener("click", () => {
+  const input = $("elevenKey");
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  $("showKeyBtn").textContent = show ? "Hide" : "Show";
+});
+
+$("saveVoiceBtn").addEventListener("click", () => {
+  const voice = $("voiceId").value.trim();
+  const key = $("elevenKey").value.trim();
+  if (!voice || !key) return voiceMsg("Add both the Voice ID and the API key.", true);
+  if (!/^[A-Za-z0-9]{10,40}$/.test(voice)) return voiceMsg("That Voice ID doesn't look right. It's letters and numbers only, about 20 characters.", true);
+  if (!/^[\x21-\x7e]{10,200}$/.test(key)) return voiceMsg("That API key doesn't look right. Copy it again from ElevenLabs.", true);
+  store.set("elevenVoice", voice);
+  store.set("elevenKey", key);
+  voiceMsg("Saved. Tap “Test my voice” to check it.");
+  voiceChanged();
+});
+
+$("removeVoiceBtn").addEventListener("click", () => {
+  if (!hasPhoneEleven() && !$("voiceId").value && !$("elevenKey").value) return;
+  if (!confirm("Remove your ElevenLabs voice and key from this phone?")) return;
+  store.del("elevenVoice");
+  store.del("elevenKey");
+  $("voiceId").value = "";
+  $("elevenKey").value = "";
+  voiceMsg("Removed from this phone.");
+  voiceChanged();
+});
+
+let testUrl = null;
+$("testVoiceBtn").addEventListener("click", async () => {
+  unlockAudio();
+  if (!hasPhoneEleven() && !(setup && setup.voice)) return voiceMsg("Save your Voice ID and API key first.", true);
+  const btn = $("testVoiceBtn");
+  btn.disabled = true;
+  voiceMsg("Making a short test clip…");
+  try {
+    stopPlayback();
+    const blob = await api("/api/speak", { text: "Hola equipo. Esta es una prueba de mi voz.", speed: speed() }, { asBlob: true });
+    if (testUrl) URL.revokeObjectURL(testUrl);
+    testUrl = URL.createObjectURL(blob);
+    els.player.src = testUrl;
+    await els.player.play();
+    voiceMsg("✓ It works. You should hear your voice in Spanish.");
+  } catch (e) {
+    voiceMsg(e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
 els.forgetBtn.addEventListener("click", async () => {
   if (!confirm("Clear the saved preshift and its audio from this phone?")) return;
   stopPlayback();

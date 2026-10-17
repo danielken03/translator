@@ -11,8 +11,8 @@ export default async function handler(req, res) {
 
   const config = getConfig(req);
   if (!checkPasscode(req, config)) return sendJson(res, 401, { error: "Wrong passcode." });
-  if (!config.elevenKey) return sendJson(res, 500, { error: "ELEVENLABS_API_KEY is not set in Vercel." });
-  if (!config.elevenVoiceId) return sendJson(res, 500, { error: "ELEVENLABS_VOICE_ID is not set in Vercel." });
+  if (!config.elevenKey) return sendJson(res, 500, { error: "Add your ElevenLabs API key in Settings (⚙)." });
+  if (!config.elevenVoiceId) return sendJson(res, 500, { error: "Add your ElevenLabs Voice ID in Settings (⚙)." });
 
   let body;
   try {
@@ -79,9 +79,9 @@ function clamp(n, lo, hi) {
 }
 
 function friendlyElevenError(status, detail) {
-  if (status === 401) return "ElevenLabs rejected the API key. Check ELEVENLABS_API_KEY in Vercel.";
+  if (status === 401) return "ElevenLabs rejected the API key. Check it in Settings (⚙).";
   if (/quota_exceeded|credits/i.test(detail)) return "ElevenLabs is out of credits for this month. Upgrade your plan or wait for the reset.";
-  if (status === 404 || /voice_not_found/i.test(detail)) return "ElevenLabs couldn't find your voice. Check ELEVENLABS_VOICE_ID in Vercel.";
+  if (status === 404 || /voice_not_found/i.test(detail)) return "ElevenLabs couldn't find that voice. Check the Voice ID in Settings (⚙), and make sure the voice is in the same ElevenLabs account as the API key.";
   if (status === 429) return "ElevenLabs is busy. Wait a moment and try again.";
   return `Voice generation failed (ElevenLabs error ${status}).`;
 }
