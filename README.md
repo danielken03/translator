@@ -57,6 +57,27 @@ Optional: `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`), `ELEVENLABS_MODEL` (d
 
 Edit `public/languages.js`. Copy an entry and change the name, voice tag and the short `guidance` line (which dialect, formal or informal "you", etc.). Stick to languages ElevenLabs' multilingual model supports so your cloned voice can speak them.
 
+## Live rooms (Speak → Live room)
+
+Your team listens on their own phones with earbuds and hears you in their language a few seconds after each pause.
+
+1. On your phone: **Speak → Live room → Start a room**. You get a room code and a QR code.
+2. Team members open the site, tap **Listen** (or scan the QR), pick their language, and tap the big button. The Listen screen shows its words in the language they pick.
+3. Tap the mic and talk. Each pause sends what you just said; listeners hear it in your cloned voice (or their phone's voice if ElevenLabs isn't set up) with captions.
+4. **End room** when you're done. Rooms also expire on their own after 4 hours.
+
+Notes:
+- Up to 4 languages per room. Each language costs its own ElevenLabs credits; the number of listeners doesn't matter.
+- Live rooms use faster models: `claude-haiku-5-5` and ElevenLabs `eleven_flash_v2_5` (about half the credits). Change with `ANTHROPIC_LIVE_MODEL` / `ELEVENLABS_LIVE_MODEL`.
+- Listeners must keep the page open with the screen on (the page tries to keep it awake).
+
+### Setup: Upstash Redis (free)
+Live rooms need a small database to pass sentences to listeners.
+1. Vercel → your **translator** project → **Storage** → **Create Database** (or Browse Marketplace) → **Upstash** → **Redis**.
+2. Pick the free plan and a region near you (e.g. us-east-1), create it, and **connect it to the translator project**.
+3. Vercel adds the connection settings automatically (`KV_REST_API_URL` / `KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`; either works).
+4. **Redeploy** the project.
+
 ## Editing the translation
 
 - **Housekeeping words**: edit `lib/glossary.js`. Each term has a meaning (used for every language) and optional exact wording per language.

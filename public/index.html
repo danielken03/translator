@@ -28,6 +28,11 @@
     </button>
   </header>
 
+  <nav class="tabs" aria-label="Mode">
+    <a href="/" class="tab active" aria-current="page">🎙 Speak</a>
+    <a href="/listen" class="tab">🎧 Listen</a>
+  </nav>
+
   <!-- Passcode gate -->
   <section id="gate" class="card gate" hidden>
     <h2>Enter passcode</h2>
@@ -40,6 +45,12 @@
   </section>
 
   <main id="app" hidden>
+    <div class="seg" role="tablist" aria-label="Speaking mode">
+      <button id="modeOne" class="on" type="button" role="tab" aria-selected="true">One phone</button>
+      <button id="modeLive" type="button" role="tab" aria-selected="false">Live room</button>
+    </div>
+
+    <div id="onePhone">
     <!-- Step 1: Speak -->
     <section class="card step" id="stepSpeak">
       <div class="step-head">
@@ -105,6 +116,43 @@
       <p class="muted small">Tap any paragraph to play from there. Replays don't use extra credits.</p>
       <ol id="paragraphs" class="paragraphs"></ol>
     </section>
+    </div><!-- /onePhone -->
+
+    <!-- Live room -->
+    <div id="liveRoom" hidden>
+      <section class="card" id="liveStart">
+        <h2>Live room</h2>
+        <p class="muted">Your team joins on their own phones with earbuds and hears you in their language a few seconds after you speak. Each person picks their own language.</p>
+        <button id="startRoomBtn" class="btn primary wide" type="button">Start a room</button>
+        <p id="liveStartError" class="status error" hidden></p>
+      </section>
+
+      <section class="card" id="liveActive" hidden>
+        <p class="muted small" style="text-align:center;margin:0">Room code</p>
+        <div id="roomCode" class="room-code">----</div>
+        <div id="qr" class="qr" aria-label="QR code to join"></div>
+        <p class="join-link small muted">Or open <strong id="joinLink"></strong></p>
+        <div class="row" style="justify-content:center">
+          <button id="shareBtn" class="btn ghost small" type="button">Share link</button>
+        </div>
+        <p id="listeners" class="listeners">Waiting for people to join…</p>
+      </section>
+
+      <section class="card" id="liveTalk" hidden>
+        <div class="record-wrap">
+          <button id="liveRecordBtn" class="record" aria-pressed="false">
+            <span class="ring" aria-hidden="true"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="mic"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" fill="currentColor"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="stop"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+          </button>
+          <p id="liveRecordLabel" class="record-label">Tap to start talking</p>
+        </div>
+        <p class="muted small">Pause briefly between thoughts — each pause sends what you just said. Your phone stays quiet; listeners hear it in their earbuds.</p>
+        <p id="liveWarning" class="note warn" hidden></p>
+        <ol id="liveLines" class="live-lines"></ol>
+        <button id="endRoomBtn" class="btn ghost wide" type="button" style="margin-top:12px">End room</button>
+      </section>
+    </div>
   </main>
 
   <!-- Settings -->
@@ -156,5 +204,6 @@
 
   <audio id="player" preload="auto" playsinline></audio>
   <script src="/app.js" type="module"></script>
+  <script src="/live-host.js" type="module"></script>
 </body>
 </html>

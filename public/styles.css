@@ -209,3 +209,60 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .setup { font-size: 15px; margin-top: 8px; }
 .setup p { margin: 4px 0; }
 .ok { color: var(--ok); }
+
+/* ---------- Speak / Listen tabs ---------- */
+.tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  background: var(--line); border-radius: 14px; padding: 4px; margin-bottom: 14px;
+}
+.tab {
+  text-align: center; padding: 10px 8px; border-radius: 11px;
+  font-weight: 600; color: var(--ink); text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab.active { background: var(--card); box-shadow: var(--shadow); }
+
+/* segmented control (One phone / Live room) */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--line); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+.seg button { font: inherit; font-weight: 600; font-size: 15px; border: none; background: transparent; color: var(--ink); padding: 9px 6px; border-radius: 9px; cursor: pointer; }
+.seg button.on { background: var(--card); box-shadow: var(--shadow); }
+
+/* ---------- Listen page ---------- */
+.lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.lang-btn {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 2px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.lang-btn .native { font-size: 18px; font-weight: 700; }
+.lang-btn .en { font-size: 13px; color: var(--muted); }
+.lang-btn.on { border-color: var(--accent); background: var(--accent-soft); }
+.code-input {
+  font-size: 28px; letter-spacing: .25em; text-align: center; font-weight: 700;
+  text-transform: uppercase; margin-bottom: 14px; font-variant-numeric: tabular-nums;
+}
+.live-head { display: flex; align-items: center; gap: 10px; font-size: 20px; flex-wrap: wrap; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.live { background: var(--ok); animation: blink 1.4s ease-in-out infinite; }
+.dot.wait { background: #d9a400; }
+.dot.ended { background: var(--muted); }
+@keyframes blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .dot.live { animation: none; } }
+.captions { list-style: none; padding: 0; margin: 14px 0; max-height: 55vh; overflow-y: auto; }
+.captions li { padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 20px; line-height: 1.45; color: var(--muted); }
+.captions li.current { color: var(--ink); background: var(--accent-soft); }
+
+/* ---------- Live room (speaker) ---------- */
+.room-code { font-size: 44px; font-weight: 800; letter-spacing: .2em; text-align: center; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.qr { display: grid; place-items: center; margin: 6px auto 10px; background: #fff; border-radius: 12px; padding: 10px; width: fit-content; }
+.qr svg { width: 180px; height: 180px; display: block; }
+.join-link { text-align: center; word-break: break-all; }
+.listeners { margin: 10px 0; font-weight: 600; text-align: center; }
+.live-lines { list-style: none; padding: 0; margin: 12px 0 0; max-height: 40vh; overflow-y: auto; }
+.live-lines li { padding: 8px 12px; border-left: 3px solid var(--line); margin-bottom: 6px; font-size: 16px; }
+.live-lines li.sent { border-color: var(--ok); }
+.live-lines li.sending { border-color: #d9a400; }
+.live-lines li.failed { border-color: var(--err); }
+.live-lines li .meta { display: block; font-size: 12px; color: var(--muted); }
+.live-lines li.interim { color: var(--muted); font-style: italic; border-color: transparent; }

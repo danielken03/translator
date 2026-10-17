@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#14322f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Listen · Voice Translator</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M6 8h13a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-6l-5 4v-4H6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z" fill="currentColor" opacity=".55"/><path d="M14 13h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-1v4l-5-4h-6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z" fill="currentColor"/></svg>
+      </span>
+      <div>
+        <h1>Voice Translator</h1>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Mode">
+    <a href="/" class="tab">🎙 Speak</a>
+    <a href="/listen" class="tab active" aria-current="page">🎧 Listen</a>
+  </nav>
+
+  <!-- Join -->
+  <section id="join" class="card">
+    <label class="field-label">🌐 Language · Idioma · Langue</label>
+    <div id="langGrid" class="lang-grid" role="radiogroup"></div>
+
+    <label class="field-label" for="code"># Room code · Código · Code</label>
+    <input id="code" class="code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="K7M2" />
+
+    <button id="startBtn" class="btn play wide" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h1a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5v-1a7 7 0 0 1 14 0v1h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z" fill="currentColor"/></svg>
+      <span id="startLabel">Start listening</span>
+    </button>
+    <p id="joinError" class="status error" hidden></p>
+  </section>
+
+  <!-- Listening -->
+  <section id="room" class="card" hidden>
+    <div class="live-head">
+      <span id="statusDot" class="dot"></span>
+      <strong id="statusText">…</strong>
+      <span id="roomTag" class="muted small"></span>
+    </div>
+    <p id="keepOpen" class="note"></p>
+    <button id="soundBtn" class="btn play wide" type="button" hidden></button>
+    <ol id="captions" class="captions" aria-live="polite"></ol>
+    <button id="leaveBtn" class="btn ghost small" type="button">Leave</button>
+  </section>
+
+  <audio id="player" preload="auto" playsinline></audio>
+  <script src="/listen.js" type="module"></script>
+</body>
+</html>
